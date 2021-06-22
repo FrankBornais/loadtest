@@ -137,6 +137,7 @@ parse_url <- function(url){
 #' @param ramp_time The time (in seconds) that it should take before all threads are firing.
 #' @param delay_per_request A delay (in milliseconds) after a thread completes before it should make its next request.
 #' @param warmup The number of times each thread should hit the endpoint before capturing the output.
+#' @param body_type The method of current encoding the body, if it exists.
 
 #' Raw assumes the body is a character and preserves it.
 #' Json converts a list into json like the pacakge httr.
@@ -187,13 +188,16 @@ loadtest <- function(url,
                      loops = 16,
                      ramp_time = 0,
                      delay_per_request = 0,
-                     warmup = 2){
+                     warmup = 2,
+                     body_type = encode){
   invisible(check_java_installed())
   invisible(check_jmeter_installed())
 
   # set up the test specification file ---------------------
   method <- match.arg(method)
   encode <- match.arg(encode)
+  body_type <- match.arg(body_type)
+
 
   parsed_url <- parse_url(url)
   protocol <- parsed_url$protocol
@@ -231,9 +235,9 @@ loadtest <- function(url,
   }
 
   if(!is.null(post_body)){
-    if(encode=="json"){
+    if(encode=="json" & body_type!="json"){
       request_body <- gsub("\"", "&quot;", jsonlite::toJSON(post_body,auto_unbox=TRUE))
-    } else if(encode=="raw"){
+    } else if(encode=="raw" | body_type == "json"){
       request_body <- gsub("\"", "&quot;", post_body)
     } else {
       stop("'encode' value not yet supported")
